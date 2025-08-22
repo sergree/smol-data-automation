@@ -1,0 +1,124 @@
+# Конфигурация пайплайнов обработки данных
+# Каждый пайплайн проходит этапы: извлечение -> трансформация -> анализ -> загрузка
+
+pipelines:
+  - name: wine_quality_csv_url  # Уникальное имя пайплайна
+    data_source:  # Источник данных
+      type: csv_url  # Загрузка CSV по HTTP URL
+      url: https://raw.githubusercontent.com/akulsriv123/Wine-Quality-Prediction/refs/heads/main/WineQT.csv
+    transform:  # Настройки предобработки
+      drop_columns:  # Столбцы для удаления
+        - Id
+      missing_strategy: mean  # Заполнение пропусков средним значением
+      outlier_strategy: zscore  # Удаление выбросов по Z-оценке
+    model:  # Настройки ML модели
+      type: classification  # Тип: классификация (предсказание категории)
+      target: quality  # Целевая переменная для предсказания
+    report:  # Настройки отчетности
+      postgresql_connection_name: main_db  # Сохранение в БД
+      bi_custom_api_connection_name: main_bi_api_mock  # Демонстрация возможности отправки в BI систему (мок)
+      # После настройки SMTP в connections.yaml, можно рассылать почту
+      # smtp_connection_name: main_email
+      # email_recipients:
+      #   - alice@gmail.com
+
+  - name: iris_xlsx  # Пайплайн для классификации цветов ириса
+    data_source:
+      type: excel_file  # Загрузка из Excel файла
+      path: ./datasets/iris.xlsx
+    transform:
+      encode:  # Кодирование категориальных признаков
+        label:  # Label encoding (числовые метки)
+          - species
+    model:
+      type: classification  # Классификация видов ириса
+      target: species  # Предсказываем вид
+      random_state: 42  # Фиксированный seed для воспроизводимости
+    report:
+      postgresql_connection_name: main_db
+      bi_custom_api_connection_name: main_bi_api_mock
+
+  - name: weather_history_csv  # Пайплайн для прогноза погоды
+    data_source:
+      type: csv_file  # Загрузка из локального CSV
+      path: ./datasets/weatherHistory.csv
+    transform:
+      drop_columns:  # Удаляем ненужные столбцы
+        - Formatted Date
+        - Apparent Temperature (C)
+        - Daily Summary
+      missing_strategy: mean  # Заполняем пропуски средним
+      encode:  # Кодируем категориальные признаки
+        label:  # Числовые метки для Summary
+          - Summary
+        onehot:  # One-hot кодирование для Precip Type
+          - Precip Type
+    model:
+      type: regression  # Регрессия (предсказание температуры)
+      target: Temperature (C)  # Предсказываем температуру
+      test_size: 0.1  # 10% данных для тестирования
+    # В этом пайплайне обученная модель занимает более 150 МБ
+    # В целях экономии места здесь экспорт в БД не используем
+    # report:
+    #   postgresql_connection_name: main_db
+
+  - name: breast_cancer_sql  # Пайплайн для диагностики рака груди
+    data_source:
+      type: postgresql  # Загрузка из PostgreSQL базы
+      connection_name: main_db  # Имя соединения из connections.yaml
+      sql_query: SELECT * FROM patients p JOIN measurements_detailed m ON p.id = m.id
+    transform:
+      drop_columns:
+        - id
+      missing_strategy: drop  # Удаляем строки с пропусками
+      outlier_strategy: zscore  # Удаляем выбросы
+      encode:
+        label:
+          - diagnosis  # Кодируем диагноз (доброкачественный/злокачественный)
+    model:
+      type: classification  # Классификация диагноза
+      target: diagnosis
+      test_size: 0.1
+    report:
+      postgresql_connection_name: main_db
+
+  - name: crypto_markets_rest_api  # Пайплайн для анализа криптовалют
+    data_source:
+      # Иногда CoinGecko REST API выдаёт "You've exceeded the Rate Limit"
+      # Поэтому безопаснее использовать локальный JSON
+      type: json_file
+      path: ./datasets/crypto_markets.json
+      # Но при желании можно проверить и REST API в реальном времени
+      # type: rest_api  # Загрузка по HTTP API
+      # url: https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd
+    transform:
+      pick_columns:  # Оставляем только нужные столбцы
+        - market_cap  # Рыночная капитализация
+        - market_cap_rank  # Ранг по капитализации
+        - total_volume  # Общий объем торгов
+        - circulating_supply  # Обращающееся предложение
+        - max_supply  # Максимальное предложение
+        - ath_change_percentage  # Изменение от максимума
+        - atl_change_percentage  # Изменение от минимума
+        - price_change_percentage_24h  # Изменение цены за 24ч
+      missing_strategy: median  # Заполняем пропуски медианой
+      outlier_strategy: zscore  # Удаляем выбросы
+    model:
+      type: regression  # Регрессия для предсказания изменения цены
+      target: price_change_percentage_24h
+      test_size: 0.1
+    report:
+      postgresql_connection_name: main_db
+      bi_custom_api_connection_name: main_bi_api_mock
+
+  - name: airline_passengers_timeseries  # Пайплайн для прогнозирования пассажиров
+    data_source:
+      type: csv_file
+      path: ./datasets/airline-passengers.csv
+    time_column: Month  # Столбец времени для временного ряда
+    model:
+      type: forecasting  # Прогнозирование временных рядов
+      target: Passengers  # Предсказываем количество пассажиров
+    report:
+      postgresql_connection_name: main_db
+      bi_custom_api_connection_name: main_bi_api_mock

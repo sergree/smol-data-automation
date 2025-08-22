@@ -1,0 +1,38 @@
+[project]
+name = "smol-data-automation"
+version = "0.1.0"
+description = "Автоматизация обработки данных: cкрипт для загрузки данных из разных источников, очистки, построения ML-моделей, отчетов и визуализаций"
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [
+    { name = "Сергей Гришаков", email = "sergree@vk.com" }
+]
+dependencies = [
+    "asyncpg>=0.30.0",
+    "httpx>=0.28.1",
+    "loguru>=0.7.3",
+    "matplotlib>=3.10.5",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.1",
+    "plotly>=6.3.0",
+    "psycopg2-binary>=2.9.10",
+    "pydantic>=2.11.7",
+    "pyyaml>=6.0.2",
+    "reportlab>=4.4.3",
+    "scikit-learn>=1.7.1",
+    "scipy>=1.16.1",
+    "seaborn>=0.13.2",
+    "sqlalchemy[asyncio]>=2.0.43",
+    "statsmodels>=0.14.5",
+]
+
+[dependency-groups]
+dev = [
+    "isort>=6.0.1",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "pytest-mock>=3.14.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

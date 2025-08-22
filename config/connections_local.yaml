@@ -1,0 +1,20 @@
+# Локальная конфигурация соединений для разработки
+# Те же настройки что и connections.yaml, но для локальной среды
+
+connections:
+  - name: main_db  # Имя соединения к локальной БД
+    type: postgresql  # Тип: PostgreSQL база данных
+    connection_string: postgresql://myuser:mypassword@localhost:5432/mydb  # Локальный PostgreSQL
+
+  - name: main_email  # Имя соединения для отправки email
+    type: smtp  # Тип: SMTP сервер
+    host: smtp.yandex.ru  # Адрес SMTP сервера
+    port: 465  # Порт (465 для SSL, 587 для TLS)
+    username: your_name@yandex.ru  # Логин от email
+    password: your_password  # Пароль от email
+
+  # Демонстрация возможности отправки в BI систему по REST API
+  - name: main_bi_api_mock  # Имя соединения для BI системы (мок)
+    type: bi_custom_api  # Тип: API системы бизнес-аналитики
+    api_url: https://your-bi-system.com/api  # URL API endpoint - любой, т.к. реальные запросы не отправляются
+    token: your_secret_token  # Токен авторизации - любой, т.к. реальные запросы не отправляются

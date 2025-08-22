@@ -1,0 +1,32 @@
+# Docker Compose для запуска системы автоматизации обработки данных
+# Содержит PostgreSQL базу и основной сервис с CRON планировщиком
+
+services:
+  postgresql:  # База данных PostgreSQL для хранения результатов
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=mydb  # Имя базы данных
+      - POSTGRES_USER=myuser  # Пользователь БД
+      - POSTGRES_PASSWORD=mypassword  # Пароль пользователя
+    ports:
+      - "5432:5432"  # Локальный порт 5432 -> порт контейнера 5432
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data  # Данные БД сохраняются локально
+      - ./datasets/breast-cancer-data.sql:/docker-entrypoint-initdb.d/01-init.sql  # SQL скрипт для инициализации
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d mydb"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  smol-data-automation:  # Основной скрипт автоматизации обработки данных
+    build: .
+    environment:
+      - CRON_SCHEDULE=*/5 * * * *  # CRON расписание: запуск скрипта каждые 5 минут
+    volumes:
+      - ./:/app  # Текущая папка -> /app в контейнере
+    restart: unless-stopped
+    depends_on:
+      postgresql:  # Ждем готовности PostgreSQL
+        condition: service_healthy
